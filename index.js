@@ -82,22 +82,23 @@ function loadShader(gl, type, source) {
 
     return shader;
 }
-var rot = 0;
 
 function setViewMatrix(gl, programInfo) {
-    var matrix = m4.perspective(1, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.1, 1000);
-    matrix = m4.translate(matrix, 0, 0,  -20);
+    var perspective = m4.perspective(1, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.1, 1000);
+    var matrix = m4.multiply(perspective, getViewMatrix());
 
     // Set the matrix.
     gl.uniformMatrix4fv(programInfo.uniformLocations.view_matrix, false, matrix);
-    rot+=0.01;
 }
 
+var rot = 0;
 function setModelMatrix(gl, programInfo) {
-    var matrix = m4.xRotation(rot*0.1);
+    var matrix = m4.translation(0, 0, -20);
+    matrix = m4.xRotate(matrix,rot*0.1);
     matrix = m4.yRotate(matrix, rot);
     gl.uniformMatrix4fv(programInfo.uniformLocations.model_matrix, false, matrix);
 
+    rot+=0.01;
 }
 
 var lightColor = 0;

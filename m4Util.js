@@ -7,7 +7,7 @@
  * The webGL fundamentals have been super helpful getting a basic app working since webgl is unnecessary complex.
  **/
 
-var m4 = {
+const m4 = {
     translation: function(tx, ty, tz) {
         return [
             1,  0,  0,  0,
@@ -160,4 +160,45 @@ var m4 = {
             b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33,
         ];
     },
+
+    vec_mul: function(a, b) {
+        var b0 = b[0];
+        var b1 = b[1];
+        var b2 = b[2];
+        var b3 = b[3];
+
+        var a00 = a[0 * 4 + 0];
+        var a01 = a[0 * 4 + 1];
+        var a02 = a[0 * 4 + 2];
+        var a03 = a[0 * 4 + 3];
+        var a10 = a[1 * 4 + 0];
+        var a11 = a[1 * 4 + 1];
+        var a12 = a[1 * 4 + 2];
+        var a13 = a[1 * 4 + 3];
+        var a20 = a[2 * 4 + 0];
+        var a21 = a[2 * 4 + 1];
+        var a22 = a[2 * 4 + 2];
+        var a23 = a[2 * 4 + 3];
+        var a30 = a[3 * 4 + 0];
+        var a31 = a[3 * 4 + 1];
+        var a32 = a[3 * 4 + 2];
+        var a33 = a[3 * 4 + 3];
+
+        return [
+            b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30,
+            b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31,
+            b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32,
+            b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33,
+        ];
+    },
 };
+
+const v4 = {
+    add: function (a, b) {
+        var c = [];
+        for (var i = 0; i < a.length; i++) {
+            c.push(a[i] + b[i]);
+        }
+        return c;
+    }
+}
