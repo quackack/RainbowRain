@@ -6,6 +6,8 @@ document.addEventListener("keyup", (event) => {
 	keySet.delete(event.key.toLowerCase());
 });
 
+const FOV = 1;
+
 var movementSpeed = 0.1;
 var rotationSpeed = 0.01;
 
@@ -13,20 +15,6 @@ var pitch = 0;
 var yaw = 0;
 
 var position = [0, 0, 0];
-
-function getViewRotation() {
-	var orientationMatrix = m4.translation(0, 0, 0);
-	orientationMatrix = m4.xRotate(orientationMatrix, pitch);
-	orientationMatrix = m4.yRotate(orientationMatrix, yaw);
-	return orientationMatrix;
-}
-
-function getAntiViewRotation() {
-	var orientationMatrix = m4.translation(0, 0, 0);
-	orientationMatrix = m4.yRotate(orientationMatrix, -yaw);
-	orientationMatrix = m4.xRotate(orientationMatrix, -pitch);
-	return orientationMatrix;
-}
 
 function updateViewMatrix() {
 	if (keySet.has('i')) {
@@ -66,12 +54,63 @@ function updateViewMatrix() {
 	position = v4.add(position, transformedTranslation);
 }
 
+function getViewRotation() {
+	var orientationMatrix = m4.translation(0, 0, 0);
+	orientationMatrix = m4.xRotate(orientationMatrix, pitch);
+	orientationMatrix = m4.yRotate(orientationMatrix, yaw);
+	return orientationMatrix;
+}
+
+function getAntiViewRotation() {
+	var orientationMatrix = m4.translation(0, 0, 0);
+	orientationMatrix = m4.yRotate(orientationMatrix, -yaw);
+	orientationMatrix = m4.xRotate(orientationMatrix, -pitch);
+	return orientationMatrix;
+}
+
 function getViewPosition() {
 	return m4.translation(position[0], position[1], position[2]);
 }
+function getAntiViewPosition() {
+	return m4.translation(-position[0], -position[1], -position[2]);
+}
 
-function getViewMatrix() {
-	updateViewMatrix();
+function getCameraSpaceMatrix() {
 
 	return m4.multiply(getViewRotation(), getViewPosition());
+}
+
+function getViewMatrix() {
+	return m4.multiply(directionToViewMatrix(), getViewPosition());
+}
+
+function getCameraToWorldMatrix() {
+	return m4.multiply(getAntiViewPosition(), getAntiViewRotation());
+}
+
+function directionToViewMatrix() {
+	const perspectiveMatrix = m4.perspective(FOV, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.1, 1000);
+	return m4.multiply(perspectiveMatrix, getViewRotation());
+}
+
+function getViewDirectionMatrix() {
+	//TODO: FIGURE OUT WHY THE OBVIOUS THING (INVVERTING THE DIRECTION TO VIEW MATRIX) DOES NOT WORK!
+	//const perspectiveMatrix = m4.perspective(FOV, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.1, 1000);
+	//const antiPerspective = m4.inverse_perspective(FOV, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.1, 1000);
+
+	var orientationMatrix = m4.translation(0, 0, 0);
+	orientationMatrix = m4.yRotate(orientationMatrix, yaw);
+	orientationMatrix = m4.xRotate(orientationMatrix, pitch);
+
+	return orientationMatrix;//m4.multiply(getAntiViewRotation(), antiPerspective);
+}
+
+function getCameraData() {
+	updateViewMatrix();
+	return {
+		worldToCameraMatrix: getCameraSpaceMatrix(),
+		cameraToWorldMatrix: getCameraToWorldMatrix(),
+		world_to_view_matrix: getViewMatrix(),
+		view_to_world_direction_matrix: getViewDirectionMatrix(),
+	}
 }

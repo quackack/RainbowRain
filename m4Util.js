@@ -64,6 +64,25 @@ const m4 = {
             0, 0, near * far * rangeInv * 2, 0
         ];
     },
+    inverse_perspective: function(fieldOfViewInRadians, aspect, near, far) {
+        var f = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfViewInRadians);
+        var rangeInv = 1/(near - far);
+
+        //Used to calculate the inverse of the bottom right sub matrix.
+        // The inverse of
+        //[a, b,
+        // c, d]
+        // is
+        //(1/det) * [d, -c,
+        //          -b, a]
+        var det = near * far * rangeInv * 2;
+        return [
+            aspect / f, 0,          0,          0,
+            0,          1 / f,      0,          0,
+            0,          0,          0,          -1,
+            0,          0,          1 / det,    (near + far) / (2 * near * far)
+        ];
+    },
 
     orthographic: function(left, right, bottom, top, near, far) {
         return [

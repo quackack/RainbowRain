@@ -34,61 +34,9 @@ const fsSource = `
     }
   `;
 
-//
-// Initialize a shader program, so WebGL knows how to draw our data
-//
-function initShaderProgram(gl, vsSource, fsSource) {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-
-    // Create the shader program
-
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    // If creating the shader program failed, alert
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert(
-            `Unable to initialize the shader program: ${gl.getProgramInfoLog(
-                shaderProgram,
-            )}`,
-        );
-        return null;
-    }
-
-    return shaderProgram;
-}
-
-//
-// creates a shader of the given type, uploads the source and
-// compiles it.
-//
-function loadShader(gl, type, source) {
-    const shader = gl.createShader(type);
-
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    // See if it compiled successfully
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert(
-            `An error occurred compiling the shaders: ${gl.getShaderInfoLog(shader)}`,
-        );
-        gl.deleteShader(shader);
-        return null;
-    }
-
-    return shader;
-}
-
-function setViewMatrix(gl, programInfo) {
-    var perspective = m4.perspective(1, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.1, 1000);
-    var matrix = m4.multiply(perspective, getViewMatrix());
-
+function setViewMatrix(gl, programInfo, camData) {
     // Set the matrix.
-    gl.uniformMatrix4fv(programInfo.uniformLocations.view_matrix, false, matrix);
+    gl.uniformMatrix4fv(programInfo.uniformLocations.view_matrix, false, camData.world_to_view_matrix);
 }
 
 var rot = 0;
@@ -109,7 +57,7 @@ function setLight(gl, programInfo) {
     lightColor += 0.003;
 }
 
-function render() {
+function resetBackground(gl) {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     // Set clear color to black, fully opaque
@@ -119,12 +67,15 @@ function render() {
 
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
+}
 
+function renderPyramid(gl, camData) {
     //Set the shader
     gl.useProgram(programInfo.program);
 
-    setViewMatrix(gl, programInfo);
+    setViewMatrix(gl, programInfo, camData);
     setModelMatrix(gl, programInfo);
+
     setLight(gl, programInfo);
 
     //Bind the vertex positions
@@ -159,20 +110,27 @@ function render() {
     var primitiveType = gl.TRIANGLES;
     var offset = 0;
     gl.drawArrays(primitiveType, offset, object.count);
-    requestAnimationFrame(render);
+
+    //Now let us draw a big ol grid of these dumb things.
+    for (var i = 0; i < 36; i++) {
+        for (var j = 0; j < 10; j++) {
+            for (var k = 0; k < 10; k++) {
+                var x = Math.sin(i * Math.PI / 18);
+                var y = Math.cos(i * Math.PI / 18);
+                gl.uniformMatrix4fv(programInfo.uniformLocations.model_matrix, false,
+                    m4.translation(x * (50 + j*10), 150 - 30 * k, y * (50 + j*10)));
+                gl.drawArrays(primitiveType, offset, object.count);
+            }
+        }
+    }
 }
 
-function getFloatBufferForData(gl, data) {
-    let buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
-    return buffer;
-}
-function getByteBufferForData(gl, data) {
-    let buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(data), gl.STATIC_DRAW);
-    return buffer;
+function render() {
+    resetBackground(gl);
+    const camData = getCameraData();
+    renderSkybox(gl, skybox, camData);
+    renderPyramid(gl, camData);
+    requestAnimationFrame(render);
 }
 
 function getObjectData(gl) {
@@ -228,6 +186,7 @@ function getObjectData(gl) {
 var gl;
 var programInfo;
 var object;
+var skybox;
 function main() {
     const canvas = document.getElementById("gl-canvas");
     // Initialize the GL context
@@ -263,6 +222,8 @@ function main() {
     };
 
     object = getObjectData(gl);
+
+    skybox = getSkyboxData(gl);
 
     // Draw the scene
     render();
