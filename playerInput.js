@@ -14,7 +14,7 @@ var rotationSpeed = 0.01;
 var pitch = 0;
 var yaw = 0;
 
-var position = [0, -0.2, 0];
+var position = [0, 0.2, 0];
 
 function updateViewMatrix() {
 	if (keySet.has('i')) {
@@ -32,26 +32,30 @@ function updateViewMatrix() {
 
 	var translation = [0,0,0,1]
 	if (keySet.has('w')) {
-		translation[2] += movementSpeed;
-	}
-	if (keySet.has('a')) {
-		translation[0] += movementSpeed;
-	}
-	if (keySet.has('s')) {
 		translation[2] -= movementSpeed;
 	}
-	if (keySet.has('d')) {
+	if (keySet.has('a')) {
 		translation[0] -= movementSpeed;
 	}
-	if (keySet.has('q')) {
-		translation[1] += movementSpeed;
+	if (keySet.has('s')) {
+		translation[2]+= movementSpeed;
 	}
-	if (keySet.has('e')) {
+	if (keySet.has('d')) {
+		translation[0] += movementSpeed;
+	}
+	if (keySet.has('q')) {
 		translation[1] -= movementSpeed;
 	}
+	if (keySet.has('e')) {
+		translation[1] += movementSpeed;
+	}
 
-	var transformedTranslation = m4.vec_mul(getAntiViewRotation(), translation);
-	position = v4.add(position, transformedTranslation);
+	if (translation[0] !== 0 || translation[1] !== 0 || translation[2] !== 0) {
+		var transformedTranslation = m4.vec_mul(getAntiViewRotation(), translation);
+		position = v4.add(position, transformedTranslation);
+		console.log(translation);
+		console.log(position);
+	}
 }
 
 function getViewRotation() {
@@ -69,10 +73,10 @@ function getAntiViewRotation() {
 }
 
 function getViewPosition() {
-	return m4.translation(position[0], position[1], position[2]);
+	return m4.translation(-position[0], -position[1], -position[2]);
 }
 function getAntiViewPosition() {
-	return m4.translation(-position[0], -position[1], -position[2]);
+	return m4.translation(position[0], position[1], position[2]);
 }
 
 function getCameraSpaceMatrix() {

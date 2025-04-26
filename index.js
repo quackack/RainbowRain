@@ -16,6 +16,7 @@ function render() {
     renderSkybox(gl, skybox, camData);
     renderPyramid(gl, pyramidInfo, camData);
     renderTerrain(gl, terrainInfo, camData);
+    gl.flush();
     requestAnimationFrame(render);
 }
 
@@ -29,7 +30,7 @@ var skybox;
 function main() {
     const canvas = document.getElementById("gl-canvas");
     // Initialize the GL context
-    gl = canvas.getContext("webgl");
+    gl = canvas.getContext("webgl2");
 
     // Only continue if WebGL is available and working
     if (gl === null) {

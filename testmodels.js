@@ -42,7 +42,7 @@ function setViewMatrix(gl, programInfo, camData) {
 
 var rot = 0;
 function setModelMatrix(gl, programInfo) {
-    var matrix = m4.translation(0, 0, -20);
+    var matrix = m4.translation(0, 0.2, -0.55);
     matrix = m4.xRotate(matrix,rot*0.1);
     matrix = m4.yRotate(matrix, rot);
     gl.uniformMatrix4fv(programInfo.uniformLocations.model_matrix, false, matrix);
@@ -99,42 +99,29 @@ function renderPyramid(gl, programInfo, camData) {
     var primitiveType = gl.TRIANGLES;
     var offset = 0;
     gl.drawArrays(primitiveType, offset, programInfo.modelData.count);
-
-    //Now let us draw a big ol grid of these dumb things.
-    for (var i = 0; i < 36; i++) {
-        for (var j = 0; j < 10; j++) {
-            for (var k = 0; k < 10; k++) {
-                var x = Math.sin(i * Math.PI / 18);
-                var y = Math.cos(i * Math.PI / 18);
-                gl.uniformMatrix4fv(programInfo.uniformLocations.model_matrix, false,
-                    m4.translation(x * (50 + j*10), 150 - 30 * k, y * (50 + j*10)));
-                gl.drawArrays(primitiveType, offset, programInfo.modelData.count);
-            }
-        }
-    }
 }
 
 function getObjectData(gl) {
     let vertexPositions = [
         //Tri1
         0, 0, 0,
-        0, 0, 10,
-        0, 10, 0,
+        0, 0, 0.1,
+        0, 0.1, 0,
 
         //Tri2
         0, 0, 0,
-        0, 10, 0,
-        10, 0, 0,
+        0, 0.1, 0,
+        0.1, 0, 0,
 
         //Tri3
         0, 0, 0,
-        10, 0, 0,
-        0, 0, 10,
+        0.1, 0, 0,
+        0, 0, 0.1,
 
         //Tri4
-        10, 0, 0,
-        0, 10, 0,
-        0, 0, 10
+        0.1, 0, 0,
+        0, 0.1, 0,
+        0, 0, 0.1
     ];
     let posBuf = getFloatBufferForData(gl, vertexPositions);
 
