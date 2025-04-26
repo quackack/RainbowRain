@@ -15,16 +15,16 @@ function render() {
     const camData = getCameraData();
     renderSkybox(gl, skybox, camData);
     renderPyramid(gl, pyramidInfo, camData);
+    renderTerrain(gl, terrainInfo, camData);
     requestAnimationFrame(render);
 }
-
 
 //
 // start here
 //
-
 var gl;
 var pyramidInfo;
+var terrainInfo;
 var skybox;
 function main() {
     const canvas = document.getElementById("gl-canvas");
@@ -41,6 +41,7 @@ function main() {
 
     pyramidInfo = getPyramidData(gl);
     skybox = getSkyboxData(gl);
+    terrainInfo = getTerrainData(gl);
 
     // Draw the scene
     render();

@@ -8,13 +8,13 @@ document.addEventListener("keyup", (event) => {
 
 const FOV = 1;
 
-var movementSpeed = 0.1;
+var movementSpeed = 0.001;
 var rotationSpeed = 0.01;
 
 var pitch = 0;
 var yaw = 0;
 
-var position = [0, 0, 0];
+var position = [0, -0.2, 0];
 
 function updateViewMatrix() {
 	if (keySet.has('i')) {
@@ -89,7 +89,7 @@ function getCameraToWorldMatrix() {
 }
 
 function directionToViewMatrix() {
-	const perspectiveMatrix = m4.perspective(FOV, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.1, 1000);
+	const perspectiveMatrix = m4.perspective(FOV, gl.canvas.clientWidth /gl.canvas.clientHeight, 0.001, 100);
 	return m4.multiply(perspectiveMatrix, getViewRotation());
 }
 
