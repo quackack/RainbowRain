@@ -19,13 +19,13 @@ var fractalSource = {
         void main() {
             vec2 z = c;
             float escapeTime = 0.0;
-            for(float i=0.0;i<50.0;i++) {
+            for(float i=0.0;i<20.0;i++) {
                 z = iterate(z);
                 if (z.x < 5.0) {
                     escapeTime = i;
                 }
             }
-            float normedEscape = escapeTime*0.02;
+            float normedEscape = escapeTime*0.05;
             gl_FragColor = vec4(normedEscape, 1.0-normedEscape, dot(c, c)*0.125, 1.0);
         }`,
     vertices: [

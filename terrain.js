@@ -3,6 +3,7 @@ const terrainSource = {
     vsSource: `
     uniform mat4 world_to_view_matrix;
     uniform float vertDiff;
+    uniform sampler2D u_texture;
     
     attribute vec2 position;
   
@@ -10,7 +11,8 @@ const terrainSource = {
     varying vec2 uv;
     
     float getHeight(vec2 pos) {
-        return 0.1*(sin(1.9 * pos.x + 2.3 * cos(8.0 * pos.y)) + cos(2.3 * pos.y + 3.0 * sin(13.0 * pos.x)));
+        vec2 uv = 0.5 + 0.5* pos;
+        return 0.1*texture2D(u_texture, uv).r;
     }
     
     vec2 getSlope(vec2 pos) {
@@ -59,7 +61,7 @@ const terrainSource = {
       gl_FragColor = vec4(ourColor, 1.0);
     }
   `,
-    resolution: 300};
+    resolution: 500};
 
 function getTerrainModel(gl) {
     var vertices = [];
@@ -78,8 +80,9 @@ function getTerrainModel(gl) {
         }
     }
     var vertBuff = getFloatBufferForData(gl, vertices);
+    const texture = fullFractalRender(gl, terrainSource.resolution*2);
 
-    return {positions: vertBuff, count: 2*terrainSource.resolution*2*terrainSource.resolution*3*2};
+    return {positions: vertBuff, texture: texture, count: 2*terrainSource.resolution*2*terrainSource.resolution*3*2};
 }
 
 
@@ -105,6 +108,9 @@ function renderTerrain(gl, programInfo, camData) {
     var offset = 0;        // start at the beginning of the buffer
     gl.vertexAttribPointer(
         programInfo.attribLocations.vertexPosition, size, type, normalize, stride, offset);
+
+
+    gl.bindTexture(gl.TEXTURE_2D, programInfo.modelData.texture);
 
     var primitiveType = gl.TRIANGLES;
     var offset = 0;

@@ -127,7 +127,7 @@ function renderPyramid(gl, programInfo, camData) {
     gl.drawArrays(primitiveType, offset, programInfo.modelData.count);
 }
 
-function getObjectData(gl,  texture) {
+function getObjectData(gl) {
     let vertexPositions = [
         //Tri1
         0, 0, 0,
@@ -193,10 +193,13 @@ function getObjectData(gl,  texture) {
         1, 0
     ];
     const uvBuff = getFloatBufferForData(gl, texCoord);
+
+    const texture = fullFractalRender(gl, 512)
+
     return {positions: posBuf, colors: colBuf, texcords: uvBuff, count: 12, texture: texture};
 }
 
-function getPyramidData(gl, texture) {
+function getPyramidData(gl) {
     const shaderProgram = initShaderProgram(gl, pyramidSource.vsSource, pyramidSource.fsSource);
 
     return {
@@ -213,6 +216,6 @@ function getPyramidData(gl, texture) {
             light_color: gl.getUniformLocation(shaderProgram, "light_color"),
             texture: gl.getUniformLocation(shaderProgram, "u_texture"),
         },
-        modelData: getObjectData(gl, texture)
+        modelData: getObjectData(gl)
     };
 }
