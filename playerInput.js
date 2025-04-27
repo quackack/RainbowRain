@@ -53,8 +53,8 @@ function updateViewMatrix() {
 	if (translation[0] !== 0 || translation[1] !== 0 || translation[2] !== 0) {
 		var transformedTranslation = m4.vec_mul(getAntiViewRotation(), translation);
 		position = v4.add(position, transformedTranslation);
-		console.log(translation);
-		console.log(position);
+		//console.log(translation);
+		//console.log(position);
 	}
 }
 

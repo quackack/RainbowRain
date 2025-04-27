@@ -20,6 +20,8 @@ function render() {
     requestAnimationFrame(render);
 }
 
+
+
 //
 // start here
 //
@@ -27,6 +29,7 @@ var gl;
 var pyramidInfo;
 var terrainInfo;
 var skybox;
+var testTexture;
 function main() {
     const canvas = document.getElementById("gl-canvas");
     // Initialize the GL context
@@ -40,7 +43,8 @@ function main() {
         return;
     }
 
-    pyramidInfo = getPyramidData(gl);
+    testTexture = fullFractalRender(gl, 512);
+    pyramidInfo = getPyramidData(gl, testTexture);
     skybox = getSkyboxData(gl);
     terrainInfo = getTerrainData(gl);
 

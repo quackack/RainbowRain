@@ -8,10 +8,12 @@ const pyramidSource = {
   
   attribute vec4 a_position;
   attribute vec4 a_color;
+  attribute vec2 a_texcoord;
   
   varying vec3 light_rel_pos;
   varying vec3 light_col;
   varying vec3 v_color;
+  varying vec2 v_texcoord;
     void main() {
       vec4 worldPos = model_matrix * a_position;
       //Set the light position
@@ -20,18 +22,25 @@ const pyramidSource = {
       gl_Position = view_matrix * worldPos;
       // Pass the color to the fragment shader.
       v_color = a_color.rgb;
+      v_texcoord = a_texcoord;
     }
   `,
     fsSource: `
     precision lowp float;
+    
+    uniform sampler2D u_texture;
+    
     // Passed in from the vertex shader.
     varying vec3 light_rel_pos;
     varying vec3 light_col;
     varying vec3 v_color;
+    varying vec2 v_texcoord;
+    
     void main() {
       vec3 light_contribution = light_col / length(light_rel_pos);
-      vec3 ourColor = v_color*(0.1 + light_contribution);
-      gl_FragColor = vec4(ourColor, 1.0);
+      vec3 rawColor = v_color * (0.1 + light_contribution);
+      gl_FragColor = texture2D(u_texture, v_texcoord) * vec4(rawColor, 1.0);
+      //gl_FragColor = vec4(rawColor, 1.0);
     }
   `};
 
@@ -96,12 +105,29 @@ function renderPyramid(gl, programInfo, camData) {
     gl.vertexAttribPointer(
         programInfo.attribLocations.vertexColor, size, type, normalize, stride, offset);
 
+    // create the texcoord buffer, make it the current ARRAY_BUFFER
+    // and copy in the texcoord values
+    // Turn on the attribute
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexTexcoord);
+    gl.bindBuffer(gl.ARRAY_BUFFER, programInfo.modelData.texcords);
+
+    // Tell the attribute how to get data out of texcoordBuffer (ARRAY_BUFFER)
+    var size = 2;          // 2 components per iteration
+    var type = gl.FLOAT;   // the data is 32bit floating point values
+    var normalize = false; // convert from 0-255 to 0.0-1.0
+    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next texcoord
+    var offset = 0;        // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+        programInfo.attribLocations.vertexTexcoord, size, type, normalize, stride, offset);
+
+    gl.bindTexture(gl.TEXTURE_2D, programInfo.modelData.texture);
+
     var primitiveType = gl.TRIANGLES;
     var offset = 0;
     gl.drawArrays(primitiveType, offset, programInfo.modelData.count);
 }
 
-function getObjectData(gl) {
+function getObjectData(gl,  texture) {
     let vertexPositions = [
         //Tri1
         0, 0, 0,
@@ -127,27 +153,50 @@ function getObjectData(gl) {
 
     let vertexColors = [
         //tri1
-        50, 0, 0,
-        0, 50, 0,
-        0, 0, 50,
+        200, 100, 100,
+        100, 200, 100,
+        100, 100, 200,
         //tri2
-        250, 0, 0,
-        200, 50, 0,
-        200, 0, 50,
+        255, 100, 100,
+        250, 200, 100,
+        250, 100, 200,
         //tri3
-        50, 200, 0,
-        0, 250, 0,
-        0, 200, 50,
+        100, 250, 100,
+        100, 255, 100,
+        100, 250, 200,
         //tri4
-        50, 0, 200,
-        0, 50, 200,
-        0, 0, 250,
+        200, 100, 250,
+        100, 200, 250,
+        100, 100, 255,
     ];
     let colBuf = getByteBufferForData(gl, vertexColors);
-    return {positions: posBuf, colors: colBuf, count: 12};
+
+    let texCoord = [
+        //Tri1
+        0, 0,
+        0, 1,
+        1, 0,
+
+        //Tri2
+        1, 1,
+        0, 1,
+        1, 0,
+
+        //Tri3
+        0, 0,
+        1, 1,
+        0, 1,
+
+        //Tri4
+        0, 0,
+        1, 1,
+        1, 0
+    ];
+    const uvBuff = getFloatBufferForData(gl, texCoord);
+    return {positions: posBuf, colors: colBuf, texcords: uvBuff, count: 12, texture: texture};
 }
 
-function getPyramidData(gl) {
+function getPyramidData(gl, texture) {
     const shaderProgram = initShaderProgram(gl, pyramidSource.vsSource, pyramidSource.fsSource);
 
     return {
@@ -155,13 +204,15 @@ function getPyramidData(gl) {
         attribLocations: {
             vertexPosition: gl.getAttribLocation(shaderProgram, "a_position"),
             vertexColor: gl.getAttribLocation(shaderProgram, "a_color"),
+            vertexTexcoord: gl.getAttribLocation(shaderProgram, "a_texcoord"),
         },
         uniformLocations: {
             model_matrix: gl.getUniformLocation(shaderProgram, "model_matrix"),
             view_matrix: gl.getUniformLocation(shaderProgram, "view_matrix"),
             light_position: gl.getUniformLocation(shaderProgram, "light_position"),
             light_color: gl.getUniformLocation(shaderProgram, "light_color"),
+            texture: gl.getUniformLocation(shaderProgram, "u_texture"),
         },
-        modelData: getObjectData(gl)
+        modelData: getObjectData(gl, texture)
     };
 }
