@@ -45,13 +45,14 @@ const terrainSource = {
     uniform vec3 light_direction;
     uniform vec3 light_color;
     uniform vec3 ambient;
+    uniform sampler2D u_texture;
     
     // Passed in from the vertex shader.
     varying vec3 normal;
     varying vec2 uv;
     
     vec3 getColor() {
-        return 0.8 + 0.2 * vec3(sin(3.0 * uv.x), cos(5.0 * uv.y), sin(7.0 * uv.x * uv.y));
+        return texture2D(u_texture, 0.5+0.5*uv).rgb;
     }
     
     void main() {

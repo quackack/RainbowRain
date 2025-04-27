@@ -16,6 +16,7 @@ function render() {
     renderSkybox(gl, skybox, camData);
     renderPyramid(gl, pyramidInfo, camData);
     renderTerrain(gl, terrainInfo, camData);
+    renderDrops(gl, drops, camData);
     gl.flush();
     requestAnimationFrame(render);
 }
@@ -29,6 +30,7 @@ var gl;
 var pyramidInfo;
 var terrainInfo;
 var skybox;
+var drops;
 function main() {
     const canvas = document.getElementById("gl-canvas");
     // Initialize the GL context
@@ -45,6 +47,7 @@ function main() {
     pyramidInfo = getPyramidData(gl);
     skybox = getSkyboxData(gl);
     terrainInfo = getTerrainData(gl);
+    drops = buildDropData(gl);
 
     // Draw the scene
     render();
