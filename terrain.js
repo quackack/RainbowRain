@@ -9,30 +9,11 @@ const terrainSource = {
   
     varying vec3 normal;
     varying vec2 uv;
-    
-    float getHeight(vec2 pos) {
-        vec2 uv = 0.5 + 0.5* pos;
-        return texture2D(u_texture, uv).r;
-    }
-    
-    vec2 getSlope(vec2 pos) {
-        return vec2(getHeight(vec2(position.x + vertDiff, position.y)) - getHeight(vec2(position.x - vertDiff, position.y)),
-        getHeight(vec2(position.x, position.y + vertDiff)) - getHeight(vec2(position.x, position.y - vertDiff))) / vertDiff;
-    }
+    ` + shadeMac.heightNorm + `
   
     void main() {
-      float height = getHeight(position);
-      vec2 slope = getSlope(position);
-      float slopeSquared = dot(slope, slope);
-      float slopeMag = sqrt(slopeSquared);
-      
-      float normalizedRun = sqrt(1.0/(1.0+slopeSquared));
-      
-      //float normalizedRise = slopeMag*normalizedRun;
-      //vec2 slopeDir = - slope / slopeMag;
-      //vec2 normalHorizontal = slopeDir*normalizedRise;
-      vec2 normalHorizontal = - slope * normalizedRun;
-      normal = vec3(normalHorizontal.x, normalizedRun, normalHorizontal.y);
+      float height = getHeight(position, u_texture);
+      normal = getNorm(position, vertDiff, u_texture);
       
       vec4 worldPos = vec4(position.x, height, position.y, 1.0);
       gl_Position = world_to_view_matrix * worldPos;

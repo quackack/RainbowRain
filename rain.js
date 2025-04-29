@@ -25,6 +25,7 @@ const dropSource = {
         uniform float gravity;
         uniform float drag;
         uniform float bounciness;
+        uniform float terrain_coordinate_gap;
         
         uniform sampler2D position_texture;
         uniform sampler2D velocity_texture;
@@ -34,6 +35,7 @@ const dropSource = {
     
         out vec4 v_new_position;
         out vec4 v_new_velocity;
+        ` + shadeMac.heightNormGLES3 + `
         
         void main() {
           //Set the render coordinates
@@ -53,17 +55,14 @@ const dropSource = {
               return;
           }
           //Check if we hit the terrain and bounce if we did
-          vec4 new_velocity = start_velocity;
+          vec3 new_velocity = start_velocity.xyz;
           if (abs(new_position.x) <= 1.0 && abs(new_position.z) <= 1.0) {
             float terrain_height = texture(terrain_texture, 0.5 + 0.5*new_position.xz).x;
             if (terrain_height > new_position.y) {
-                if (terrain_height > start_position.y) {
-                    new_velocity.xz = -new_velocity.xz * bounciness;
-                    new_position = start_position;
-                } else {
-                    new_velocity.y = abs(new_velocity.y)*bounciness;
-                    new_position.y = terrain_height;
-                }
+                vec3 norm = getNorm(new_position.xz, terrain_coordinate_gap, terrain_texture);
+                new_velocity = new_velocity - 2.0*dot(new_velocity.xyz, norm) * norm;
+                new_velocity = new_velocity * bounciness;
+                new_position = start_position;
             }
           }
           
@@ -74,7 +73,7 @@ const dropSource = {
           float vsqr = dot(new_velocity, new_velocity);
           new_velocity = max(0.1, 1.0 - vsqr*drag) * new_velocity;
           
-          v_new_velocity = new_velocity;
+          v_new_velocity.xyz = new_velocity;
         }
         `,
         fsSource: `#version 300 es
@@ -171,6 +170,7 @@ function updateDrops(gl, dropInfo, terrainInfo) {
     gl.uniform1fv(dropInfo.move.uniformLocations.gravity,  [0.000001]);
     gl.uniform1fv(dropInfo.move.uniformLocations.drag,  [1000]);
     gl.uniform1fv(dropInfo.move.uniformLocations.bounciness,  [0.9]);
+    gl.uniform1fv(dropInfo.move.uniformLocations.terrain_coordinate_gap,  [1/terrainSource.resolution]);
 
     gl.enableVertexAttribArray(dropInfo.move.attribLocations.dropCoordinate);
     gl.bindBuffer(gl.ARRAY_BUFFER, dropInfo.modelData.dropCoordinate);
@@ -283,6 +283,7 @@ function buildDropData(gl) {
                 gravity: gl.getUniformLocation(positionUpdateShader, "gravity"),
                 bounciness: gl.getUniformLocation(positionUpdateShader, "bounciness"),
                 drag: gl.getUniformLocation(positionUpdateShader, "drag"),
+                terrain_coordinate_gap: gl.getUniformLocation(positionUpdateShader, "terrain_coordinate_gap"),
             }
         },
         modelData: getDropModelData(gl)
