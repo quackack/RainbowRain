@@ -17,6 +17,7 @@ function render() {
     renderPyramid(gl, pyramidInfo, camData);
     renderTerrain(gl, terrainInfo, camData);
     renderDrops(gl, drops, camData);
+    updateDrops(gl, drops);
     gl.flush();
     requestAnimationFrame(render);
 }
@@ -35,6 +36,7 @@ function main() {
     const canvas = document.getElementById("gl-canvas");
     // Initialize the GL context
     gl = canvas.getContext("webgl2");
+    gl.getExtension("EXT_color_buffer_float");
 
     // Only continue if WebGL is available and working
     if (gl === null) {

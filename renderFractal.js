@@ -2,30 +2,34 @@ var fractalSource = {
     vertShader: `
         attribute vec4 a_position;
         
+        varying vec2 zInit;
         varying vec2 c;
         void main() {
             gl_Position = a_position;
-            c = 2.0 * a_position.xy;
+            zInit = 1.5 * a_position.xy;
+            c = vec2(-abs(a_position.x), a_position.y)*0.1+ vec2(-0.3, -.65);
         }`,
     fragmentShader: `
         precision mediump float;
         
         // Passed in from the vertex shader.
+        varying vec2 zInit;
         varying vec2 c;
         vec2 iterate(vec2 z) {
             return vec2(z.x*z.x - z.y*z.y + c.x, 2.0 * z.x*z.y + c.y);
         }
         
         void main() {
-            vec2 z = c;
+            vec2 z = zInit;
             float escapeTime = 0.0;
-            for(float i=0.0;i<20.0;i++) {
+            for(float i=0.0;i<10.0;i++) {
                 z = iterate(z);
-                if (z.x < 5.0) {
-                    escapeTime = i;
+                float magSqr = dot(z, z);
+                if (magSqr < 2.0) {
+                    escapeTime = i +1.0 - magSqr*0.7;
                 }
             }
-            float normedEscape = escapeTime*0.05;
+            float normedEscape = escapeTime*0.1;
             gl_FragColor = vec4(normedEscape, 1.0-normedEscape, dot(c, c)*0.125, 1.0);
         }`,
     vertices: [
