@@ -22,8 +22,6 @@ function render() {
     requestAnimationFrame(render);
 }
 
-
-
 //
 // start here
 //

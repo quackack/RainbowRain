@@ -43,7 +43,7 @@ const terrainSource = {
       gl_FragColor = vec4(ourColor, 1.0);
     }
   `,
-    resolution: 500};
+    resolution: 200};
 
 function getTerrainModel(gl) {
     var vertices = [];
@@ -63,8 +63,10 @@ function getTerrainModel(gl) {
     }
     var vertBuff = getFloatBufferForData(gl, vertices);
     const texture = fullFractalRender(gl, terrainSource.resolution*2);
+    const heightMapSwap = fullFractalRender(gl, terrainSource.resolution*2);
 
-    return {positions: vertBuff, texture: texture, count: 2*terrainSource.resolution*2*terrainSource.resolution*3*2};
+    return {positions: vertBuff, texture: texture, heightMapSwap: heightMapSwap,
+        count: 2*terrainSource.resolution*2*terrainSource.resolution*3*2};
 }
 
 
@@ -76,7 +78,7 @@ function renderTerrain(gl, programInfo, camData) {
     gl.uniform3fv(programInfo.uniformLocations.light_color,  [1.0, 0.8, 0.9]);
     gl.uniform3fv(programInfo.uniformLocations.light_direction, [0.01, 0.95, 0.3]);
     gl.uniform3fv(programInfo.uniformLocations.ambient, [0.01, 0.015, 0.02]);
-    gl.uniform1fv(programInfo.uniformLocations.vertDiff, [1/terrainSource.resolution]);
+    gl.uniform1fv(programInfo.uniformLocations.vertDiff, [1/(2.0*terrainSource.resolution)]);
 
     //Bind the vertex positions
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);

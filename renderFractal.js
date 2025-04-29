@@ -30,7 +30,7 @@ var fractalSource = {
                 }
             }
             float normedEscape = escapeTime*0.1;
-            gl_FragColor = vec4(normedEscape*0.5, 1.0-normedEscape, dot(c, c)*0.125, 1.0);
+            gl_FragColor = vec4(0.1 + normedEscape*0.4, 1.0-normedEscape, dot(c, c)*0.125, 1.0);
         }`,
     vertices: [
         -1, -1, 0.999999,
