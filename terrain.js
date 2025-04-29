@@ -12,7 +12,7 @@ const terrainSource = {
     
     float getHeight(vec2 pos) {
         vec2 uv = 0.5 + 0.5* pos;
-        return 0.1*texture2D(u_texture, uv).r;
+        return texture2D(u_texture, uv).r;
     }
     
     vec2 getSlope(vec2 pos) {

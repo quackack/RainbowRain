@@ -17,7 +17,7 @@ function render() {
     renderPyramid(gl, pyramidInfo, camData);
     renderTerrain(gl, terrainInfo, camData);
     renderDrops(gl, drops, camData);
-    updateDrops(gl, drops);
+    updateDropsAndTerrain(gl, drops, terrainInfo);
     gl.flush();
     requestAnimationFrame(render);
 }
@@ -37,6 +37,8 @@ function main() {
     // Initialize the GL context
     gl = canvas.getContext("webgl2");
     gl.getExtension("EXT_color_buffer_float");
+    gl.getExtension("WEBGL_draw_buffers");
+    gl.getExtension("GL_EXT_draw_buffers");
 
     // Only continue if WebGL is available and working
     if (gl === null) {

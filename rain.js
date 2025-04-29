@@ -21,38 +21,84 @@ const dropSource = {
     }
   `},
     positionUpdateShader: {
-        vsSource: `
+        vsSource: `#version 300 es
+        uniform float gravity;
+        uniform float drag;
+        uniform float bounciness;
+        
         uniform sampler2D position_texture;
         uniform sampler2D velocity_texture;
+        uniform sampler2D terrain_texture;
         
-        attribute float a_drop_coordinate;
+        in float a_drop_coordinate;
     
-        varying vec4 v_new_position;
+        out vec4 v_new_position;
+        out vec4 v_new_velocity;
+        
         void main() {
+          //Set the render coordinates
           gl_PointSize = 1.0;
           gl_Position = vec4(a_drop_coordinate*2.0-1.0, 0, 0, 1.0);
           
-          vec4 start_position = texture2D(position_texture, vec2(a_drop_coordinate, 0));
-          vec4 velocity = texture2D(velocity_texture, vec2(a_drop_coordinate, 0));
-          v_new_position = start_position+velocity;
-          if (v_new_position.y < 0.0) {
-              v_new_position.y = 1.0;
-              v_new_position.xz = -v_new_position.xz;
+          //Do the basic position update.
+          vec4 start_position = texture(position_texture, vec2(a_drop_coordinate, 0));
+          vec4 start_velocity = texture(velocity_texture, vec2(a_drop_coordinate, 0));
+          vec4 new_position = start_position+start_velocity;
+          //If we went below the map, then reset.
+          if (new_position.y < 0.0) {
+              new_position.y = 1.0;
+              new_position.xz = -new_position.xz;
+              v_new_position = new_position;
+              v_new_velocity = start_velocity;
+              return;
           }
+          //Check if we hit the terrain and bounce if we did
+          vec4 new_velocity = start_velocity;
+          if (abs(new_position.x) <= 1.0 && abs(new_position.z) <= 1.0) {
+            float terrain_height = texture(terrain_texture, 0.5 + 0.5*new_position.xz).x;
+            if (terrain_height > new_position.y) {
+                if (terrain_height > start_position.y) {
+                    //float priorHeight = texture(terrain_texture, 0.5 + 0.5*start_position.xz).x;
+                    //if (priorHeight > start_position.y) {
+                    //    new_position.y = 1.0;
+                    //} else {
+                        new_velocity.xz = -new_velocity.xz * bounciness;
+                        new_position = start_position;
+                    //}
+                } else {
+                new_velocity.y = abs(new_velocity.y)*bounciness;
+                  new_position.y = terrain_height;
+                }
+            }
+          }
+          
+          v_new_position = new_position;
+          //Update the velocity.
+          
+          new_velocity.y -= gravity;
+          float vsqr = dot(new_velocity, new_velocity);
+          new_velocity = max(0.1, 1.0 - vsqr*drag) * new_velocity;
+          
+          v_new_velocity = new_velocity;
         }
         `,
-        fsSource: `
+        fsSource: `#version 300 es
         precision highp float;
     
-        varying vec4 v_new_position;
+        in vec4 v_new_position;
+        in vec4 v_new_velocity;
+        
+        layout(location=0) out vec4 o_new_position;
+        layout(location=1) out vec4 o_new_velocity;
         void main() {
-          gl_FragColor = v_new_position;
+          o_new_position = v_new_position;
+          o_new_velocity = v_new_velocity;
         }`
     },
 
     moveShader: {},
     dropCount: 10000,
-    dropSize: 0.01};
+    dropSize: 0.003};
 
 function getInitialDropLocationTexture(gl, offset) {
     var dropLocations = [];
@@ -102,39 +148,40 @@ function getDropModelData(gl) {
     var centerBuffer = getFloatBufferForData(gl, a_position_center_coordinate);
     var offsetBuffer = getFloatBufferForData(gl, a_position_offset);
     var dropPositions = getInitialDropLocationTexture(gl, 0.01);
+    var dropPositionsSwap = getInitialDropLocationTexture(gl, -0.01);
     var dropVelocities = getInitialDropVelocityTexture(gl);
-    var dropStateSwapTexture = getInitialDropLocationTexture(gl, -0.01);
+    var dropVelocitiesSwap = getInitialDropVelocityTexture(gl);
 
     const fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
 
-    // attach the texture as the first color attachment
-    const attachmentPoint = gl.COLOR_ATTACHMENT0;
-    gl.framebufferTexture2D(
-        gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, dropStateSwapTexture, 0);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    return {dropCoordinate: centerBuffer, offsetBuffer: offsetBuffer, dropPositions: dropPositions,
-        dropVelocities: dropVelocities, dropStateSwapTexture: dropStateSwapTexture,
+    return {dropCoordinate: centerBuffer, offsetBuffer: offsetBuffer,
+        dropPositions: dropPositions, dropPositionsSwap: dropPositionsSwap,
+        dropVelocities: dropVelocities, dropVelocitiesSwap: dropVelocitiesSwap,
         count: dropSource.dropCount*6*3};
 }
 
-function updateDrops(gl, programInfo) {
+function updateDrops(gl, dropInfo, terrainInfo) {
     const fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     // attach the texture as the first color attachment
-    const attachmentPoint = gl.COLOR_ATTACHMENT0;
     gl.framebufferTexture2D(
-        gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, programInfo.modelData.dropStateSwapTexture, 0);
+        gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, dropInfo.modelData.dropPositionsSwap, 0);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, dropInfo.modelData.dropVelocitiesSwap, 0);
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
 
     gl.viewport(0, 0, dropSource.dropCount, 1);
     gl.clear(gl.DEPTH_BUFFER_BIT);
 
-    gl.useProgram(programInfo.move.program);
+    gl.useProgram(dropInfo.move.program);
 
-    gl.enableVertexAttribArray(programInfo.move.attribLocations.dropCoordinate);
-    gl.bindBuffer(gl.ARRAY_BUFFER, programInfo.modelData.dropCoordinate);
+    gl.uniform1fv(dropInfo.move.uniformLocations.gravity,  [0.000001]);
+    gl.uniform1fv(dropInfo.move.uniformLocations.drag,  [1000]);
+    gl.uniform1fv(dropInfo.move.uniformLocations.bounciness,  [0.9]);
+
+    gl.enableVertexAttribArray(dropInfo.move.attribLocations.dropCoordinate);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dropInfo.modelData.dropCoordinate);
 
     // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
     var size = 1;          // 1 components per iteration
@@ -143,26 +190,38 @@ function updateDrops(gl, programInfo) {
     var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
     var offset = 0;        // start at the beginning of the buffer
     gl.vertexAttribPointer(
-        programInfo.move.attribLocations.dropCoordinate, size, type, normalize, stride, offset);
+        dropInfo.move.attribLocations.dropCoordinate, size, type, normalize, stride, offset);
 
     // set which texture units to render with.
-    gl.uniform1i(programInfo.move.uniformLocations.positionTexture, 0);  // texture unit 0
-    gl.uniform1i(programInfo.move.uniformLocations.velocityTexture, 1);  // texture unit 1
+    gl.uniform1i(dropInfo.move.uniformLocations.positionTexture, 0);  // texture unit 0
+    gl.uniform1i(dropInfo.move.uniformLocations.velocityTexture, 1);  // texture unit 1
+    gl.uniform1i(dropInfo.move.uniformLocations.terrainTexture, 2);  // texture unit 1
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, programInfo.modelData.dropPositions);
+    gl.bindTexture(gl.TEXTURE_2D, dropInfo.modelData.dropPositions);
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, programInfo.modelData.dropVelocities);
+    gl.bindTexture(gl.TEXTURE_2D, dropInfo.modelData.dropVelocities);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, terrainInfo.modelData.texture);
 
-    gl.drawArrays(gl.POINTS, 0, programInfo.modelData.count);
-
-
-    const newSwap = programInfo.modelData.dropPositions;
-    programInfo.modelData.dropPositions = programInfo.modelData.dropStateSwapTexture;
-    programInfo.modelData.dropStateSwapTexture = newSwap;
+    gl.drawArrays(gl.POINTS, 0, dropInfo.modelData.count);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+function swapPositions(dropProgram) {
+    const newPosSwap = dropProgram.modelData.dropPositions;
+    dropProgram.modelData.dropPositions = dropProgram.modelData.dropPositionsSwap;
+    dropProgram.modelData.dropPositionsSwap = newPosSwap;
+    const newVelSwap = dropProgram.modelData.dropVelocities;
+    dropProgram.modelData.dropVelocities = dropProgram.modelData.dropVelocitiesSwap;
+    dropProgram.modelData.dropVelocitiesSwap = newVelSwap;
+}
+
+function updateDropsAndTerrain(gl, dropProgram, terrainProgram) {
+    updateDrops(gl, dropProgram, terrainProgram);
+    swapPositions(dropProgram);
 }
 
 function renderDrops(gl, programInfo, camData) {
@@ -228,6 +287,10 @@ function buildDropData(gl) {
             uniformLocations: {
                 positionTexture: gl.getUniformLocation(positionUpdateShader, "position_texture"),
                 velocityTexture: gl.getUniformLocation(positionUpdateShader, "velocity_texture"),
+                terrainTexture: gl.getUniformLocation(positionUpdateShader, "terrain_texture"),
+                gravity: gl.getUniformLocation(positionUpdateShader, "gravity"),
+                bounciness: gl.getUniformLocation(positionUpdateShader, "bounciness"),
+                drag: gl.getUniformLocation(positionUpdateShader, "drag"),
             }
         },
         modelData: getDropModelData(gl)

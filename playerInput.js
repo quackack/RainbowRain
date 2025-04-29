@@ -8,13 +8,13 @@ document.addEventListener("keyup", (event) => {
 
 const FOV = 1;
 
-var movementSpeed = 0.001;
+var movementSpeed = 0.005;
 var rotationSpeed = 0.01;
 
 var pitch = 0;
 var yaw = 0;
 
-var position = [0, 0.2, 0];
+var position = [0, 0.5, 0];
 
 function updateViewMatrix() {
 	if (keySet.has('i')) {

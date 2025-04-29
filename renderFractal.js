@@ -25,12 +25,12 @@ var fractalSource = {
             for(float i=0.0;i<10.0;i++) {
                 z = iterate(z);
                 float magSqr = dot(z, z);
-                if (magSqr < 2.0) {
-                    escapeTime = i +1.0 - magSqr*0.7;
+                if (magSqr < 16.0) {
+                    escapeTime = i +1.0 - magSqr*0.08;
                 }
             }
             float normedEscape = escapeTime*0.1;
-            gl_FragColor = vec4(normedEscape, 1.0-normedEscape, dot(c, c)*0.125, 1.0);
+            gl_FragColor = vec4(normedEscape*0.5, 1.0-normedEscape, dot(c, c)*0.125, 1.0);
         }`,
     vertices: [
         -1, -1, 0.999999,
