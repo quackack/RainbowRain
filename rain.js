@@ -49,9 +49,9 @@ const dropSource = {
           //If we went below the map, then reset.
           if (new_position.y < 0.0) {
               new_position.y = 1.0;
-              new_position.xz = -new_position.xz;
+              new_position.xz = -0.5*new_position.xz;
               v_new_position = new_position;
-              v_new_velocity = start_velocity;
+              v_new_velocity = start_velocity + 0.0002 * sin(20.0*start_position);
               return;
           }
           //Check if we hit the terrain and bounce if we did
@@ -59,10 +59,16 @@ const dropSource = {
           if (abs(new_position.x) <= 1.0 && abs(new_position.z) <= 1.0) {
             float terrain_height = texture(terrain_texture, 0.5 + 0.5*new_position.xz).x;
             if (terrain_height > new_position.y) {
-                vec3 norm = getNorm(new_position.xz, terrain_coordinate_gap, terrain_texture);
-                new_velocity = new_velocity - 2.0*dot(new_velocity.xyz, norm) * norm;
-                new_velocity = new_velocity * bounciness;
-                new_position = start_position;
+                float speed = dot(new_velocity, new_velocity);
+                if (speed < 0.0000001) {
+                    new_position.y = 1.0;
+                    v_new_velocity = start_velocity + 0.0002 * sin(20.0*start_position);
+                } else {
+                    vec3 norm = getNorm(new_position.xz, terrain_coordinate_gap, terrain_texture);
+                    new_velocity = new_velocity - 2.0*dot(new_velocity.xyz, norm) * norm;
+                    new_velocity = new_velocity * bounciness;
+                    new_position = start_position;
+                }
             }
           }
           
