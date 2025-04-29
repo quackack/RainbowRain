@@ -58,16 +58,11 @@ const dropSource = {
             float terrain_height = texture(terrain_texture, 0.5 + 0.5*new_position.xz).x;
             if (terrain_height > new_position.y) {
                 if (terrain_height > start_position.y) {
-                    //float priorHeight = texture(terrain_texture, 0.5 + 0.5*start_position.xz).x;
-                    //if (priorHeight > start_position.y) {
-                    //    new_position.y = 1.0;
-                    //} else {
-                        new_velocity.xz = -new_velocity.xz * bounciness;
-                        new_position = start_position;
-                    //}
+                    new_velocity.xz = -new_velocity.xz * bounciness;
+                    new_position = start_position;
                 } else {
-                new_velocity.y = abs(new_velocity.y)*bounciness;
-                  new_position.y = terrain_height;
+                    new_velocity.y = abs(new_velocity.y)*bounciness;
+                    new_position.y = terrain_height;
                 }
             }
           }
@@ -151,9 +146,6 @@ function getDropModelData(gl) {
     var dropPositionsSwap = getInitialDropLocationTexture(gl, -0.01);
     var dropVelocities = getInitialDropVelocityTexture(gl);
     var dropVelocitiesSwap = getInitialDropVelocityTexture(gl);
-
-    const fb = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
 
     return {dropCoordinate: centerBuffer, offsetBuffer: offsetBuffer,
         dropPositions: dropPositions, dropPositionsSwap: dropPositionsSwap,
