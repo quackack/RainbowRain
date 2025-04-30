@@ -40,6 +40,16 @@ const dropSource = {
         out vec4 v_new_velocity;
         ` + shadeMac.heightNormGLES3 + `
         
+        vec4 getNewPosition(vec3 old_position, vec3 old_velocity) {
+            vec3 quasirandom = sin(old_velocity*1000.0 + old_position*123.0);
+            quasirandom = quasirandom * abs(quasirandom);
+            return vec4(quasirandom.x, quasirandom.y*0.5 + 1.5, quasirandom.z, 1.0);
+        }
+        vec4 getNewVelocity(vec3 old_position, vec3 old_velocity) {
+            vec3 quasirandom = sin(old_position*1000.0 + old_velocity*87.0)*0.0002;
+            return vec4(quasirandom.x, quasirandom.y -0.001, quasirandom.z, 0.0);
+        }
+        
         void main() {
           //Set the render coordinates
           gl_PointSize = 1.0;
@@ -51,10 +61,8 @@ const dropSource = {
           vec4 new_position = start_position+start_velocity;
           //If we went below the map, then reset.
           if (new_position.y < 0.0) {
-              new_position.y = 1.5;
-              new_position.xz = -0.5*new_position.xz;
-              v_new_position = new_position;
-              v_new_velocity = start_velocity + 0.0002 * sin(20.0*start_position);
+              v_new_position = getNewPosition(new_position.xyz, start_velocity.xyz);
+              v_new_velocity = getNewVelocity(new_position.xyz, start_velocity.xyz);
               return;
           }
           //Check if we hit the terrain and bounce if we did
@@ -63,13 +71,14 @@ const dropSource = {
             float terrain_height = texture(terrain_texture, 0.5 + 0.5*new_position.xz).x;
             if (terrain_height > new_position.y) {
                 float speed = dot(new_velocity, new_velocity);
-                if (speed < 0.000000001) {
-                    new_position.y = 1.0;
-                    v_new_velocity = start_velocity + 0.0002 * sin(20.0*start_position);
+                if (speed < 0.000000005) {
+                    v_new_position = getNewPosition(new_position.xyz, new_velocity);
+                    v_new_velocity = getNewVelocity(new_position.xyz, new_velocity);
+                    return;
                 } else {
                     vec3 norm = getNorm(new_position.xz, terrain_coordinate_gap, terrain_texture);
-                    new_velocity = new_velocity - (2.0*dot(new_velocity.xyz, norm)) * norm;
-                    new_velocity = new_velocity * bounciness;
+                    new_velocity = new_velocity - (1.0 + bounciness) * dot(new_velocity.xyz, norm) * norm ;
+                    new_velocity = new_velocity * 0.95 ;
                     new_position = new_position + vec4(norm * 0.001, 0.0)  ;
                 }
             }
@@ -156,7 +165,7 @@ function getInitialDropLocationTexture(gl, offset) {
         for (var j = 0; j < 100; j++) {
             var xPos = (i - 49.5)/50;
             var zPos = (j - 49.5)/50;
-            var yPos = 1.5 + Math.sin(i) * Math.sin(j) + offset;
+            var yPos = 2.5 + Math.sin(i) * Math.sin(j) + offset;
             dropLocations.push(xPos, yPos, zPos, 1.0);
         }
     }
@@ -223,9 +232,9 @@ function updateDrops(gl, dropInfo, terrainInfo) {
 
     gl.useProgram(dropInfo.move.program);
 
-    gl.uniform1fv(dropInfo.move.uniformLocations.gravity,  [0.0000015]);
+    gl.uniform1fv(dropInfo.move.uniformLocations.gravity,  [0.000003]);
     gl.uniform1fv(dropInfo.move.uniformLocations.drag,  [500]);
-    gl.uniform1fv(dropInfo.move.uniformLocations.bounciness,  [0.93]);
+    gl.uniform1fv(dropInfo.move.uniformLocations.bounciness,  [0.8]);
     gl.uniform1fv(dropInfo.move.uniformLocations.terrain_coordinate_gap,  [1/(2.0*terrainSource.resolution)]);
 
     gl.enableVertexAttribArray(dropInfo.move.attribLocations.dropCoordinate);
@@ -275,7 +284,7 @@ function updateTerrain(gl, dropInfo, terrainInfo) {
 
     gl.useProgram(dropInfo.updateTerrain.program);
 
-    gl.uniform1fv(dropInfo.updateTerrain.uniformLocations.terrain_damage_rate,  [0.3]);
+    gl.uniform1fv(dropInfo.updateTerrain.uniformLocations.terrain_damage_rate,  [0.02]);
     gl.uniform1fv(dropInfo.updateTerrain.uniformLocations.terrain_coordinate_gap,  [1/(2.0*terrainSource.resolution)]);
 
     gl.enableVertexAttribArray(dropInfo.updateTerrain.attribLocations.dropCoordinate);

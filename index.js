@@ -37,6 +37,7 @@ function main() {
     gl.getExtension("EXT_color_buffer_float");
     gl.getExtension("WEBGL_draw_buffers");
     gl.getExtension("GL_EXT_draw_buffers");
+    gl.getExtension("EXT_float_blend");
 
     // Only continue if WebGL is available and working
     if (gl === null) {
