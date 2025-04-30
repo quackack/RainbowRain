@@ -78,7 +78,7 @@ const dropSource = {
                 } else {
                     vec3 norm = getNorm(new_position.xz, terrain_coordinate_gap, terrain_texture);
                     new_velocity = new_velocity - (1.0 + bounciness) * dot(new_velocity.xyz, norm) * norm ;
-                    new_velocity = new_velocity * 0.95 ;
+                    new_velocity = new_velocity * 0.99 ;
                     new_position = new_position + vec4(norm * 0.001, 0.0)  ;
                 }
             }
@@ -109,7 +109,8 @@ const dropSource = {
     },
     terrainUpdateShader: {
         vsSource: `#version 300 es
-        uniform float terrain_damage_rate;
+        uniform float top_damage_rate;
+        uniform float bot_damage_rate;
         uniform float terrain_coordinate_gap;
         
         uniform sampler2D position_texture;
@@ -123,7 +124,7 @@ const dropSource = {
         
         void main() {
           //Set the render coordinates
-          gl_PointSize = 1.0;
+          gl_PointSize = 4.0;
           
           //Do the basic position update.
           vec4 start_position = texture(position_texture, vec2(a_drop_coordinate, 0));
@@ -138,6 +139,7 @@ const dropSource = {
             if (terrain_height > new_position.y) {
                 vec3 norm = getNorm(new_position.xz, terrain_coordinate_gap, terrain_texture);
                 float impact_speed = abs(dot(norm, start_velocity.xyz));
+                float terrain_damage_rate = top_damage_rate*terrain_height + (1.0-terrain_height)*bot_damage_rate;
                 delta_height = -impact_speed * terrain_damage_rate;
             }
           }
@@ -234,7 +236,7 @@ function updateDrops(gl, dropInfo, terrainInfo) {
 
     gl.uniform1fv(dropInfo.move.uniformLocations.gravity,  [0.000003]);
     gl.uniform1fv(dropInfo.move.uniformLocations.drag,  [500]);
-    gl.uniform1fv(dropInfo.move.uniformLocations.bounciness,  [0.8]);
+    gl.uniform1fv(dropInfo.move.uniformLocations.bounciness,  [0.9]);
     gl.uniform1fv(dropInfo.move.uniformLocations.terrain_coordinate_gap,  [1/(2.0*terrainSource.resolution)]);
 
     gl.enableVertexAttribArray(dropInfo.move.attribLocations.dropCoordinate);
@@ -284,7 +286,8 @@ function updateTerrain(gl, dropInfo, terrainInfo) {
 
     gl.useProgram(dropInfo.updateTerrain.program);
 
-    gl.uniform1fv(dropInfo.updateTerrain.uniformLocations.terrain_damage_rate,  [0.02]);
+    gl.uniform1fv(dropInfo.updateTerrain.uniformLocations.top_damage_rate,  [0.03]);
+    gl.uniform1fv(dropInfo.updateTerrain.uniformLocations.bot_damage_rate,  [0.001]);
     gl.uniform1fv(dropInfo.updateTerrain.uniformLocations.terrain_coordinate_gap,  [1/(2.0*terrainSource.resolution)]);
 
     gl.enableVertexAttribArray(dropInfo.updateTerrain.attribLocations.dropCoordinate);
@@ -426,7 +429,8 @@ function buildDropData(gl) {
                 velocityTexture: gl.getUniformLocation(terrainUpdateShader, "velocity_texture"),
                 terrainTexture: gl.getUniformLocation(terrainUpdateShader, "terrain_texture"),
                 terrain_coordinate_gap: gl.getUniformLocation(terrainUpdateShader, "terrain_coordinate_gap"),
-                terrain_damage_rate: gl.getUniformLocation(terrainUpdateShader, "terrain_damage_rate"),
+                top_damage_rate: gl.getUniformLocation(terrainUpdateShader, "top_damage_rate"),
+                bot_damage_rate: gl.getUniformLocation(terrainUpdateShader, "bot_damage_rate"),
             }
         },
         modelData: getDropModelData(gl)

@@ -43,7 +43,7 @@ const terrainSource = {
       gl_FragColor = vec4(ourColor, 1.0);
     }
   `,
-    resolution: 50};
+    resolution: 100};
 
 function getTerrainModel(gl) {
     var vertices = [];
